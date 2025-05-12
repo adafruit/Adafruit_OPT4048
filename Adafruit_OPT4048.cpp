@@ -50,24 +50,45 @@ Adafruit_OPT4048::~Adafruit_OPT4048() {
  * @return true if initialization was successful, false otherwise.
  */
 bool Adafruit_OPT4048::begin(uint8_t addr, TwoWire *wire) {
+  Serial.print(F("DEBUG: Begin with address 0x"));
+  Serial.println(addr, HEX);
+
   // Clean up old instance if reinitializing
   if (i2c_dev) {
+    Serial.println(F("DEBUG: Cleaning up old I2C device"));
     delete i2c_dev;
     i2c_dev = nullptr;
   }
+
   // Create I2C device
   i2c_dev = new Adafruit_I2CDevice(addr, wire);
-  if (!i2c_dev || !i2c_dev->begin()) {
+  if (!i2c_dev) {
+    Serial.println(F("DEBUG: Failed to create I2C device"));
     return false;
   }
+
+  if (!i2c_dev->begin()) {
+    Serial.println(F("DEBUG: Failed to begin I2C device"));
+    return false;
+  }
+
+  Serial.println(F("DEBUG: I2C device initialized successfully"));
+
   // Verify device ID to ensure correct chip is connected
   {
     Adafruit_BusIO_Register idreg(i2c_dev, OPT4048_REG_DEVICE_ID, 2, MSBFIRST);
     uint16_t id = idreg.read();
+
+    Serial.print(F("DEBUG: Device ID = 0x"));
+    Serial.println(id, HEX);
+
     // Default reset device ID is 0x0821
     if (id != 0x0821) {
+      Serial.println(F("DEBUG: Invalid device ID, expecting 0x0821"));
       return false;
     }
+
+    Serial.println(F("DEBUG: Device ID verified correctly"));
   }
 
   // Set interrupt direction to default (high threshold active)
@@ -94,67 +115,143 @@ bool Adafruit_OPT4048::begin(uint8_t addr, TwoWire *wire) {
  */
 bool Adafruit_OPT4048::getChannelsRaw(uint32_t *ch0, uint32_t *ch1, uint32_t *ch2, uint32_t *ch3) {
   if (!i2c_dev) {
+    Serial.println(F("DEBUG: i2c_dev is null"));
     return false;
   }
   uint8_t buf[16];
   uint8_t reg = OPT4048_REG_CH0_MSB;
   if (!i2c_dev->write_then_read(&reg, 1, buf, sizeof(buf))) {
+    Serial.println(F("DEBUG: I2C write_then_read failed"));
     return false;
   }
-
+  
   for (uint8_t ch = 0; ch < 4; ch++) {
-    uint16_t msb = ((uint16_t)buf[4 * ch] << 8) | buf[4 * ch + 1];
-    uint16_t lsb = ((uint16_t)buf[4 * ch + 2] << 8) | buf[4 * ch + 3];
-    uint8_t exp = (msb >> 12) & 0x0F;
-    uint32_t mant = ((msb & 0x0FFF) << 8) | ((lsb >> 8) & 0xFF);
+	uint8_t exp = (uint16_t)buf[4 * ch] >> 4;
+    uint16_t msb = (((uint16_t)(buf[4 * ch] & 0xF)) << 8) | buf[4 * ch + 1];
+    uint16_t lsb = ((uint16_t)buf[4 * ch + 2]);
+	uint8_t counter = buf[4 * ch + 3] >> 4;
+	uint8_t crc = buf[4 * ch + 3] & 0xF;
+	
+    uint32_t mant = ((uint32_t)msb << 8) | lsb;
+    
+	/*
+    // Debug output for each channel
+    Serial.print(F("DEBUG: CH"));
+    Serial.print(ch);
+    Serial.print(F(": MSB=0x"));
+    Serial.print(msb, HEX); 
+    Serial.print(F(", LSB=0x"));
+    Serial.print(lsb, HEX);
+    Serial.print(F(", count="));
+    Serial.print(counter);
+    Serial.print(F(", crc="));
+    Serial.print(crc);
+    Serial.print(F(", exp="));
+    Serial.print(exp);
+    Serial.print(F(", mant=0x"));
+    Serial.println(mant, HEX);
+    */
+	
+    // Implementing CRC check based on the formula from the datasheet:
+    // CRC bits for each channel:
+    // R[19:0]=(RESULT_MSB_CH0[11:0]<<8)+RESULT_LSB_CH0[7:0]
+    // X[0]=XOR(EXPONENT_CH0[3:0],R[19:0],COUNTER_CHx[3:0]) - XOR of all bits
+    // X[1]=XOR(COUNTER_CHx[1],COUNTER_CHx[3],R[1],R[3],R[5],R[7],R[9],R[11],R[13],R[15],R[17],R[19],E[1],E[3])
+    // X[2]=XOR(COUNTER_CHx[3],R[3],R[7],R[11],R[15],R[19],E[3])
+    // X[3]=XOR(R[3],R[11],R[19])
+
+    // Note: COUNTER_CHx[3:0] is the CRC itself, which creates a circular reference
+    // We need to include it in our calculations to match the hardware implementation
+
+    // Initialize CRC variables
+    uint8_t x0 = 0;  // CRC bit 0
+    uint8_t x1 = 0;  // CRC bit 1
+    uint8_t x2 = 0;  // CRC bit 2
+    uint8_t x3 = 0;  // CRC bit 3
+
+    // Calculate each CRC bit according to the datasheet formula:
+    // Calculate bit 0 (x0):
+    //X[0]=XOR(EXPONENT_CH0[3:0],R[19:0],COUNTER_CHx[3:0])
+    x0 = 0;
+	
+    // XOR all exponent bits
+    for (uint8_t i = 0; i < 4; i++) {
+      x0 ^= (exp >> i) & 1;
+    }
+
+    // XOR all mantissa bits
+    for (uint8_t i = 0; i < 20; i++) {
+      x0 ^= (mant >> i) & 1;
+    }
+
+    // XOR all counter (CRC) bits
+    for (uint8_t i = 0; i < 4; i++) {
+      x0 ^= (counter >> i) & 1;
+    }
+
+    // Calculate bit 1 (x1) per datasheet:
+    // X[1]=XOR(COUNTER_CHx[1],COUNTER_CHx[3],R[1],R[3],R[5],R[7],R[9],R[11],R[13],R[15],R[17],R[19],E[1],E[3])
+    x1 = 0;
+    // Include counter bits 1 and 3
+    x1 ^= (counter >> 1) & 1;  // COUNTER_CHx[1]
+    x1 ^= (counter >> 3) & 1;  // COUNTER_CHx[3]
+
+    // Include odd-indexed mantissa bits
+    for (uint8_t i = 1; i < 20; i += 2) {
+      x1 ^= (mant >> i) & 1;
+    }
+
+    // Include exponent bits 1 and 3
+    x1 ^= (exp >> 1) & 1;  // E[1]
+    x1 ^= (exp >> 3) & 1;  // E[3]
+
+    // Calculate bit 2 (x2) per datasheet:
+    // X[2]=XOR(COUNTER_CHx[3],R[3],R[7],R[11],R[15],R[19],E[3])
+    x2 = 0;
+    // Include counter bit 3
+    x2 ^= (counter >> 3) & 1;  // COUNTER_CHx[3]
+
+    // Include mantissa bits at positions 3,7,11,15,19
+    for (uint8_t i = 3; i < 20; i += 4) {
+      x2 ^= (mant >> i) & 1;
+    }
+
+    // Include exponent bit 3
+    x2 ^= (exp >> 3) & 1;  // E[3]
+
+    // Calculate bit 3 (x3) per datasheet:
+    // X[3]=XOR(R[3],R[11],R[19])
+    x3 = 0;
+    // XOR mantissa bits at positions 3, 11, 19
+    x3 ^= (mant >> 3) & 1;   // R[3]
+    x3 ^= (mant >> 11) & 1;  // R[11]
+    x3 ^= (mant >> 19) & 1;  // R[19]
+
+    // Combine bits to form the CRC
+    uint8_t calculated_crc = (x3 << 3) | (x2 << 2) | (x1 << 1) | x0;
+
+    // Verify CRC
+    if (crc != calculated_crc) {
+      //Serial.print(F("DEBUG: CRC check failed for channel "));
+      Serial.println(ch);
+      return false;
+    }
+
 
     // Convert to 20-bit mantissa << exponent format
     // This is safe because the sensor only uses exponents 0-6 in actual measurements
     // (even when auto-range mode (12) is enabled in the configuration register)
-    uint32_t code = mant << exp;
-    uint8_t crc = lsb & 0x0F;
-    
-    // Compute CRC bits
-    uint8_t x0 = 0;
-    for (uint8_t i = 0; i < 4; i++) {
-      x0 ^= (exp >> i) & 1;
-    }
-    for (uint8_t i = 0; i < 20; i++) {
-      x0 ^= (mant >> i) & 1;
-    }
-    for (uint8_t i = 0; i < 4; i++) {
-      x0 ^= (crc >> i) & 1;
-    }
-    
-    uint8_t x1 = ((crc >> 1) & 1) ^ ((crc >> 3) & 1);
-    for (uint8_t i = 1; i < 20; i += 2) {
-      x1 ^= (mant >> i) & 1;
-    }
-    x1 ^= (exp >> 1) & 1;
-    x1 ^= (exp >> 3) & 1;
-    
-    uint8_t x2 = ((crc >> 3) & 1);
-    for (uint8_t i = 3; i < 20; i += 4) {
-      x2 ^= (mant >> i) & 1;
-    }
-    x2 ^= (exp >> 3) & 1;
-    
-    uint8_t x3 = ((mant >> 3) & 1) ^ ((mant >> 11) & 1) ^ ((mant >> 19) & 1);
-    
-    // Verify CRC
-    if (((crc & 1) != x0) || (((crc >> 1) & 1) != x1) || 
-        (((crc >> 2) & 1) != x2) || (((crc >> 3) & 1) != x3)) {
-      return false;
-    }
-    
+	uint32_t output = (uint32_t)mant << (uint32_t)exp;
+
     // Assign output
     switch (ch) {
-      case 0: *ch0 = code; break;
-      case 1: *ch1 = code; break;
-      case 2: *ch2 = code; break;
-      case 3: *ch3 = code; break;
+      case 0: *ch0 = output; break;
+      case 1: *ch1 = output; break;
+      case 2: *ch2 = output; break;
+      case 3: *ch3 = output; break;
     }
   }
+  //Serial.println(F("DEBUG: All channel reads successful"));
   return true;
 }
 
