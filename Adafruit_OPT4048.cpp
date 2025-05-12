@@ -158,44 +158,41 @@ bool Adafruit_OPT4048::getChannelsRaw(uint32_t *ch0, uint32_t *ch1, uint32_t *ch
     uint32_t code = mant << exp;
     uint8_t crc = lsb & 0x0F;
 
-    // Compute CRC bits
-    uint8_t x0 = 0;
-    for (uint8_t i = 0; i < 4; i++) {
-      x0 ^= (exp >> i) & 1;
-    }
-    for (uint8_t i = 0; i < 20; i++) {
-      x0 ^= (mant >> i) & 1;
-    }
-    for (uint8_t i = 0; i < 4; i++) {
-      x0 ^= (crc >> i) & 1;
+    // Calculate CRC based on datasheet
+    // The CRC calculation is based on polynomial: x^4 + x + 1
+    // Implementation follows LFSR (Linear Feedback Shift Register) approach
+
+    // First we need to create the data stream (exp + mantissa bits)
+    uint32_t datastream = ((uint32_t)exp << 20) | mant;  // 24 bits: 4-bit exp + 20-bit mantissa
+
+    // Initial state of LFSR (0000)
+    uint8_t lfsr = 0;
+
+    // Process each bit of datastream (MSB first)
+    for (int8_t i = 23; i >= 0; i--) {
+      // Get current bit from datastream
+      uint8_t data_bit = (datastream >> i) & 1;
+
+      // XOR the input bit with the MSB of current LFSR value
+      uint8_t feedback = (lfsr >> 3) ^ data_bit;
+
+      // Shift LFSR left by 1
+      lfsr = (lfsr << 1) & 0x0F;
+
+      // If feedback is 1, XOR with polynomial taps (x^4 + x + 1) -> 0b0011
+      if (feedback) {
+        lfsr ^= 0x03;  // Polynomial taps
+      }
     }
 
-    uint8_t x1 = ((crc >> 1) & 1) ^ ((crc >> 3) & 1);
-    for (uint8_t i = 1; i < 20; i += 2) {
-      x1 ^= (mant >> i) & 1;
-    }
-    x1 ^= (exp >> 1) & 1;
-    x1 ^= (exp >> 3) & 1;
-
-    uint8_t x2 = ((crc >> 3) & 1);
-    for (uint8_t i = 3; i < 20; i += 4) {
-      x2 ^= (mant >> i) & 1;
-    }
-    x2 ^= (exp >> 3) & 1;
-
-    uint8_t x3 = ((mant >> 3) & 1) ^ ((mant >> 11) & 1) ^ ((mant >> 19) & 1);
+    // The calculated CRC is now in lfsr
+    uint8_t calculated_crc = lfsr;
 
     // Debug CRC values
     Serial.print(F("DEBUG: CRC=0x"));
     Serial.print(crc, HEX);
-    Serial.print(F(", Calculated: x0="));
-    Serial.print(x0);
-    Serial.print(F(", x1="));
-    Serial.print(x1);
-    Serial.print(F(", x2="));
-    Serial.print(x2);
-    Serial.print(F(", x3="));
-    Serial.println(x3);
+    Serial.print(F(", Calculated CRC=0x"));
+    Serial.println(calculated_crc, HEX);
 
     // Additional debug to inspect the data structure more closely
     Serial.print(F("DEBUG: Raw bytes for CH"));
@@ -209,18 +206,12 @@ bool Adafruit_OPT4048::getChannelsRaw(uint32_t *ch0, uint32_t *ch1, uint32_t *ch
     Serial.print(F(" 0x"));
     Serial.println(buf[4*ch+3], HEX);
 
-    // TEMPORARY: Skip CRC check
-    Serial.print(F("DEBUG: CRC check temporarily disabled for channel "));
-    Serial.println(ch);
-
-    /* Original CRC verification:
-    if (((crc & 1) != x0) || (((crc >> 1) & 1) != x1) ||
-        (((crc >> 2) & 1) != x2) || (((crc >> 3) & 1) != x3)) {
+    // Verify CRC
+    if (crc != calculated_crc) {
       Serial.print(F("DEBUG: CRC check failed for channel "));
       Serial.println(ch);
       return false;
     }
-    */
 
     // Assign output
     switch (ch) {
