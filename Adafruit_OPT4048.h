@@ -181,9 +181,11 @@ public:
    * Uses the McCamy's approximation formula to calculate CCT from CIE 1931 x,y coordinates.
    * This is accurate for color temperatures between 2000K and 30000K.
    *
-   * @return The calculated color temperature in Kelvin, or 0 if calculation failed
+   * @param CIEx The CIE x chromaticity coordinate
+   * @param CIEy The CIE y chromaticity coordinate
+   * @return The calculated color temperature in Kelvin
    */
-  double getColorTemperature(void);
+  double calculateColorTemperature(double CIEx, double CIEy);
 
 private:
   Adafruit_I2CDevice *i2c_dev;

@@ -1020,27 +1020,19 @@ bool Adafruit_OPT4048::getCIE(double *CIEx, double *CIEy, double *lux) {
  * n = (x - 0.3320) / (0.1858 - y)
  * CCT = 437 * n^3 + 3601 * n^2 + 6861 * n + 5517
  *
- * @return The calculated color temperature in Kelvin, or 0 if calculation failed
+ * @param CIEx The CIE x chromaticity coordinate
+ * @param CIEy The CIE y chromaticity coordinate
+ * @return The calculated color temperature in Kelvin
  */
-double Adafruit_OPT4048::getColorTemperature(void) {
-  if (!i2c_dev) {
-    return 0.0;
-  }
-
-  // Get CIE coordinates
-  double x, y, lux;
-  if (!getCIE(&x, &y, &lux)) {
-    return 0.0;
-  }
-
+double Adafruit_OPT4048::calculateColorTemperature(double CIEx, double CIEy) {
   // Check for invalid coordinates
-  if (x == 0 && y == 0) {
+  if (CIEx == 0 && CIEy == 0) {
     return 0.0;
   }
 
   // Calculate using McCamy's formula from spreadsheet
   // n = (x - 0.3320) / (0.1858 - y)
-  double n = (x - 0.3320) / (0.1858 - y);
+  double n = (CIEx - 0.3320) / (0.1858 - CIEy);
 
   // CCT = 437 * n^3 + 3601 * n^2 + 6861 * n + 5517
   double cct = (437.0 * n * n * n) + (3601.0 * n * n) + (6861.0 * n) + 5517.0;

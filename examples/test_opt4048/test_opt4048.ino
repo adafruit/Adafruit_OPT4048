@@ -194,6 +194,23 @@ void loop() {
     Serial.print(F("Z (CH2): ")); Serial.println(z);
     Serial.print(F("W (CH3): ")); Serial.println(w);
 
+    // Calculate and display CIE chromaticity coordinates and lux
+    double CIEx, CIEy, lux;
+    if (sensor.getCIE(&CIEx, &CIEy, &lux)) {
+      Serial.println(F("\nCIE Coordinates:"));
+      Serial.print(F("CIE x: ")); Serial.println(CIEx, 8);
+      Serial.print(F("CIE y: ")); Serial.println(CIEy, 8);
+      Serial.print(F("Lux: ")); Serial.println(lux, 4);
+
+      // Calculate and display color temperature
+      double colorTemp = sensor.calculateColorTemperature(CIEx, CIEy);
+      Serial.print(F("Color Temperature: "));
+      Serial.print(colorTemp, 2);
+      Serial.println(F(" K"));
+    } else {
+      Serial.println(F("\nError calculating CIE coordinates"));
+    }
+
     // Read and print status flags
     uint8_t flags = sensor.getFlags();
     Serial.println(F("\nStatus Flags:"));
@@ -211,23 +228,6 @@ void loop() {
     }
     if (flags == 0) {
       Serial.println(F("- No flags set"));
-    }
-
-    // Calculate and display CIE chromaticity coordinates and lux
-    double CIEx, CIEy, lux;
-    if (sensor.getCIE(&CIEx, &CIEy, &lux)) {
-      Serial.println(F("\nCIE Coordinates:"));
-      Serial.print(F("CIE x: ")); Serial.println(CIEx, 8);
-      Serial.print(F("CIE y: ")); Serial.println(CIEy, 8);
-      Serial.print(F("Lux: ")); Serial.println(lux, 4);
-
-      // Calculate and display color temperature
-      double colorTemp = sensor.getColorTemperature();
-      Serial.print(F("Color Temperature: "));
-      Serial.print(colorTemp, 2);
-      Serial.println(F(" K"));
-    } else {
-      Serial.println(F("\nError calculating CIE coordinates"));
     }
     Serial.println();
   } else {
