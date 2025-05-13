@@ -84,6 +84,10 @@ bool Adafruit_OPT4048::begin(uint8_t addr, TwoWire *wire) {
   // Set interrupt configuration to "data ready for all channels"
   setInterruptConfig(OPT4048_INT_CFG_DATA_READY_ALL);
 
+  setInterruptLatch(true);     // Use latched interrupts
+  setInterruptPolarity(true);  // Use active-high interrupts
+  setInterruptConfig(OPT4048_INT_CFG_DATA_READY_ALL);
+
   return true;
 }
 
@@ -217,7 +221,7 @@ bool Adafruit_OPT4048::getChannelsRaw(uint32_t *ch0, uint32_t *ch1, uint32_t *ch
     // Verify CRC
     if (crc != calculated_crc) {
       //Serial.print(F("DEBUG: CRC check failed for channel "));
-      Serial.println(ch);
+      //Serial.println(ch);
       return false;
     }
 
