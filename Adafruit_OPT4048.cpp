@@ -158,60 +158,83 @@ bool Adafruit_OPT4048::getChannelsRaw(uint32_t *ch0, uint32_t *ch1, uint32_t *ch
     uint32_t code = mant << exp;
     uint8_t crc = lsb & 0x0F;
 
-    // Based on the debug data analysis, we need to implement
-    // a CRC calculation that matches the expected values from the sensor
+    // Implementing CRC check based on the formula from the datasheet:
+    // CRC bits for each channel:
+    // R[19:0]=(RESULT_MSB_CH0[11:0]<<8)+RESULT_LSB_CH0[7:0]
+    // X[0]=XOR(EXPONENT_CH0[3:0],R[19:0],COUNTER_CHx[3:0]) - XOR of all bits
+    // X[1]=XOR(COUNTER_CHx[1],COUNTER_CHx[3],R[1],R[3],R[5],R[7],R[9],R[11],R[13],R[15],R[17],R[19],E[1],E[3])
+    // X[2]=XOR(COUNTER_CHx[3],R[3],R[7],R[11],R[15],R[19],E[3])
+    // X[3]=XOR(R[3],R[11],R[19])
 
-    // Initialize CRC variables to match the debug output format
+    // Note: COUNTER_CHx[3:0] is the CRC itself, which creates a circular reference
+    // We need to include it in our calculations to match the hardware implementation
+
+    // Initialize CRC variables
     uint8_t x0 = 0;  // CRC bit 0
     uint8_t x1 = 0;  // CRC bit 1
     uint8_t x2 = 0;  // CRC bit 2
     uint8_t x3 = 0;  // CRC bit 3
 
-    // Implementing CRC check based on the provided debug output:
-    // For CH0: MSB=0x11F, LSB=0x3CD7, exp=0, mant=0x1F3C, CRC=0x7, Expected CRC bits: x0=0, x1=1, x2=0, x3=0
-    // For CH1: MSB=0x1E6, LSB=0x9CD9, exp=0, mant=0xE69C, CRC=0x9, Expected CRC bits: x0=1, x1=0, x2=0, x3=1
-    // For CH2: MSB=0x38, LSB=0xB0DF, exp=0, mant=0x38B0, CRC=0xF, Expected CRC bits: x0=0, x1=0, x2=1, x3=1
-    // For CH3: MSB=0x6B5, LSB=0x64D3, exp=0, mant=0xB564, CRC=0x3, Expected CRC bits: x0=0, x1=0, x2=1, x3=0
+    // Calculate each CRC bit according to the datasheet formula:
+    // Calculate bit 0 (x0):
+    // X[0]=XOR(EXPONENT_CH0[3:0],R[19:0],COUNTER_CHx[3:0])
+    x0 = 0;
 
-    // Calculate CRC (based on analysis of expected results)
-    // Calculate bit 0 (x0)
-    uint8_t ones_count = 0;
-    // Count in exponent (bits 0-3)
+    // The COUNTER_CHx[3:0] is the CRC itself
+    uint8_t counter = crc;
+
+    // XOR all exponent bits
     for (uint8_t i = 0; i < 4; i++) {
-      if ((exp >> i) & 1) ones_count++;
+      x0 ^= (exp >> i) & 1;
     }
-    // Count in mantissa (bits 0-19)
-    for (uint8_t i = 0; i < 20; i++) {
-      if ((mant >> i) & 1) ones_count++;
-    }
-    // Parity bit (1 if odd number of 1s, 0 if even)
-    x0 = ones_count & 1;
 
-    // Calculate bit 1 (x1) - based on odd bit positions
+    // XOR all mantissa bits
+    for (uint8_t i = 0; i < 20; i++) {
+      x0 ^= (mant >> i) & 1;
+    }
+
+    // XOR all counter (CRC) bits
+    for (uint8_t i = 0; i < 4; i++) {
+      x0 ^= (counter >> i) & 1;
+    }
+
+    // Calculate bit 1 (x1) per datasheet:
+    // X[1]=XOR(COUNTER_CHx[1],COUNTER_CHx[3],R[1],R[3],R[5],R[7],R[9],R[11],R[13],R[15],R[17],R[19],E[1],E[3])
     x1 = 0;
-    // Check bits at odd positions in mantissa
+    // Include counter bits 1 and 3
+    x1 ^= (counter >> 1) & 1;  // COUNTER_CHx[1]
+    x1 ^= (counter >> 3) & 1;  // COUNTER_CHx[3]
+
+    // Include odd-indexed mantissa bits
     for (uint8_t i = 1; i < 20; i += 2) {
       x1 ^= (mant >> i) & 1;
     }
-    // Include exponent bits 1 and 3
-    x1 ^= (exp >> 1) & 1;
-    x1 ^= (exp >> 3) & 1;
 
-    // Calculate bit 2 (x2) - based on position mod 4
+    // Include exponent bits 1 and 3
+    x1 ^= (exp >> 1) & 1;  // E[1]
+    x1 ^= (exp >> 3) & 1;  // E[3]
+
+    // Calculate bit 2 (x2) per datasheet:
+    // X[2]=XOR(COUNTER_CHx[3],R[3],R[7],R[11],R[15],R[19],E[3])
     x2 = 0;
-    // Check every 4th bit in mantissa
-    for (uint8_t i = 0; i < 20; i += 4) {
+    // Include counter bit 3
+    x2 ^= (counter >> 3) & 1;  // COUNTER_CHx[3]
+
+    // Include mantissa bits at positions 3,7,11,15,19
+    for (uint8_t i = 3; i < 20; i += 4) {
       x2 ^= (mant >> i) & 1;
     }
-    // Include exponent bit 0
-    x2 ^= (exp >> 0) & 1;
 
-    // Calculate bit 3 (x3) - based on specific positions
+    // Include exponent bit 3
+    x2 ^= (exp >> 3) & 1;  // E[3]
+
+    // Calculate bit 3 (x3) per datasheet:
+    // X[3]=XOR(R[3],R[11],R[19])
     x3 = 0;
-    // XOR bits at positions 3, 11, 19 of mantissa
-    x3 ^= (mant >> 3) & 1;
-    x3 ^= (mant >> 11) & 1;
-    x3 ^= (mant >> 19) & 1;
+    // XOR mantissa bits at positions 3, 11, 19
+    x3 ^= (mant >> 3) & 1;   // R[3]
+    x3 ^= (mant >> 11) & 1;  // R[11]
+    x3 ^= (mant >> 19) & 1;  // R[19]
 
     // Combine bits to form the CRC
     uint8_t calculated_crc = (x3 << 3) | (x2 << 2) | (x1 << 1) | x0;
