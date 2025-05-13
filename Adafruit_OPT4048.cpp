@@ -50,12 +50,8 @@ Adafruit_OPT4048::~Adafruit_OPT4048() {
  * @return true if initialization was successful, false otherwise.
  */
 bool Adafruit_OPT4048::begin(uint8_t addr, TwoWire *wire) {
-  Serial.print(F("DEBUG: Begin with address 0x"));
-  Serial.println(addr, HEX);
-
   // Clean up old instance if reinitializing
   if (i2c_dev) {
-    Serial.println(F("DEBUG: Cleaning up old I2C device"));
     delete i2c_dev;
     i2c_dev = nullptr;
   }
@@ -63,32 +59,22 @@ bool Adafruit_OPT4048::begin(uint8_t addr, TwoWire *wire) {
   // Create I2C device
   i2c_dev = new Adafruit_I2CDevice(addr, wire);
   if (!i2c_dev) {
-    Serial.println(F("DEBUG: Failed to create I2C device"));
     return false;
   }
 
   if (!i2c_dev->begin()) {
-    Serial.println(F("DEBUG: Failed to begin I2C device"));
     return false;
   }
-
-  Serial.println(F("DEBUG: I2C device initialized successfully"));
 
   // Verify device ID to ensure correct chip is connected
   {
     Adafruit_BusIO_Register idreg(i2c_dev, OPT4048_REG_DEVICE_ID, 2, MSBFIRST);
     uint16_t id = idreg.read();
 
-    Serial.print(F("DEBUG: Device ID = 0x"));
-    Serial.println(id, HEX);
-
     // Default reset device ID is 0x0821
     if (id != 0x0821) {
-      Serial.println(F("DEBUG: Invalid device ID, expecting 0x0821"));
       return false;
     }
-
-    Serial.println(F("DEBUG: Device ID verified correctly"));
   }
 
   // Set interrupt direction to default (high threshold active)
@@ -115,13 +101,11 @@ bool Adafruit_OPT4048::begin(uint8_t addr, TwoWire *wire) {
  */
 bool Adafruit_OPT4048::getChannelsRaw(uint32_t *ch0, uint32_t *ch1, uint32_t *ch2, uint32_t *ch3) {
   if (!i2c_dev) {
-    Serial.println(F("DEBUG: i2c_dev is null"));
     return false;
   }
   uint8_t buf[16];
   uint8_t reg = OPT4048_REG_CH0_MSB;
   if (!i2c_dev->write_then_read(&reg, 1, buf, sizeof(buf))) {
-    Serial.println(F("DEBUG: I2C write_then_read failed"));
     return false;
   }
   
