@@ -14,7 +14,6 @@ Key features:
 * Adjustable conversion time (600μs to 800ms per channel)
 * Measures color temperature, illuminance, and chromaticity
 * I²C interface
-* 1.7V to 3.6V operating voltage
 
 ## Dependencies
 
