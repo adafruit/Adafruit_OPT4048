@@ -6,7 +6,7 @@
  * @section intro_sec Introduction
  *
  * This is a library for the Adafruit OPT4048 breakout board
- * ----> https://www.adafruit.com/products/XXX (replace with actual product URL)
+ * ----> https://www.adafruit.com/products/6334
  *
  * Adafruit invests time and resources providing this open source code,
  * please support Adafruit and open-source hardware by purchasing

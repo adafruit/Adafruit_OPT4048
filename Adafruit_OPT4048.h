@@ -4,7 +4,7 @@
  * Arduino library for the OPT4048 High Speed High Precision Tristimulus XYZ Color Sensor.
  *
  * This is a library for the Adafruit OPT4048 breakout
- * ----> https://www.adafruit.com/products/XXX (replace with actual product URL)
+ * ----> https://www.adafruit.com/products/6334
  *
  * Adafruit invests time and resources providing this open source code,
  * please support Adafruit and open-source hardware by purchasing
