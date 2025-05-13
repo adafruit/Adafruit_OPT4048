@@ -1,0 +1,22 @@
+var searchData=
+[
+  ['opt4048_5fdefault_5faddr',['OPT4048_DEFAULT_ADDR',['../_adafruit___o_p_t4048_8h.html#a24b9df5417d6f7f988029835551053d9',1,'Adafruit_OPT4048.h']]],
+  ['opt4048_5fflag_5fconversion_5fready',['OPT4048_FLAG_CONVERSION_READY',['../_adafruit___o_p_t4048_8h.html#a54493b3cb5890e82e0c52ff90f9148e1',1,'Adafruit_OPT4048.h']]],
+  ['opt4048_5fflag_5fh',['OPT4048_FLAG_H',['../_adafruit___o_p_t4048_8h.html#a1800bf887505d69aca2ef81fb6b48c72',1,'Adafruit_OPT4048.h']]],
+  ['opt4048_5fflag_5fl',['OPT4048_FLAG_L',['../_adafruit___o_p_t4048_8h.html#a4d88d887ce9dd763151c462f48e2b85b',1,'Adafruit_OPT4048.h']]],
+  ['opt4048_5fflag_5foverload',['OPT4048_FLAG_OVERLOAD',['../_adafruit___o_p_t4048_8h.html#affc0fda7ef4d4280a30c4b56e73066da',1,'Adafruit_OPT4048.h']]],
+  ['opt4048_5freg_5fch0_5flsb',['OPT4048_REG_CH0_LSB',['../_adafruit___o_p_t4048_8h.html#a7c59516d5c62692c501c14775cfddfd7',1,'Adafruit_OPT4048.h']]],
+  ['opt4048_5freg_5fch0_5fmsb',['OPT4048_REG_CH0_MSB',['../_adafruit___o_p_t4048_8h.html#a0291dda71c43184a5804fd7d1c2e11ea',1,'Adafruit_OPT4048.h']]],
+  ['opt4048_5freg_5fch1_5flsb',['OPT4048_REG_CH1_LSB',['../_adafruit___o_p_t4048_8h.html#a31b63b1e271b1f80f19cd09e64c82fb5',1,'Adafruit_OPT4048.h']]],
+  ['opt4048_5freg_5fch1_5fmsb',['OPT4048_REG_CH1_MSB',['../_adafruit___o_p_t4048_8h.html#a3f4a8dd52267438315c7a653f788ed31',1,'Adafruit_OPT4048.h']]],
+  ['opt4048_5freg_5fch2_5flsb',['OPT4048_REG_CH2_LSB',['../_adafruit___o_p_t4048_8h.html#acd34ea5e994cd9b05f7cfdab0f30c453',1,'Adafruit_OPT4048.h']]],
+  ['opt4048_5freg_5fch2_5fmsb',['OPT4048_REG_CH2_MSB',['../_adafruit___o_p_t4048_8h.html#a3b640817091f03124006796bfb204958',1,'Adafruit_OPT4048.h']]],
+  ['opt4048_5freg_5fch3_5flsb',['OPT4048_REG_CH3_LSB',['../_adafruit___o_p_t4048_8h.html#ae2ffd720414d74877d4dc9e773288012',1,'Adafruit_OPT4048.h']]],
+  ['opt4048_5freg_5fch3_5fmsb',['OPT4048_REG_CH3_MSB',['../_adafruit___o_p_t4048_8h.html#ad8a6c51e663e61abdbd722573ff9ba90',1,'Adafruit_OPT4048.h']]],
+  ['opt4048_5freg_5fconfig',['OPT4048_REG_CONFIG',['../_adafruit___o_p_t4048_8h.html#af369d8378e6a584b3904b9fe2e20a914',1,'Adafruit_OPT4048.h']]],
+  ['opt4048_5freg_5fdevice_5fid',['OPT4048_REG_DEVICE_ID',['../_adafruit___o_p_t4048_8h.html#af24ffb74b5ac58f611ab1eb1d3e566c8',1,'Adafruit_OPT4048.h']]],
+  ['opt4048_5freg_5fstatus',['OPT4048_REG_STATUS',['../_adafruit___o_p_t4048_8h.html#aaaaf34616dba5838cc1c2d9e2d14da58',1,'Adafruit_OPT4048.h']]],
+  ['opt4048_5freg_5fthreshold_5fcfg',['OPT4048_REG_THRESHOLD_CFG',['../_adafruit___o_p_t4048_8h.html#abe72aace5fc2cc98d1c488c610b81cfc',1,'Adafruit_OPT4048.h']]],
+  ['opt4048_5freg_5fthreshold_5fhigh',['OPT4048_REG_THRESHOLD_HIGH',['../_adafruit___o_p_t4048_8h.html#a0c566680e00551be7822d0aae370e0e5',1,'Adafruit_OPT4048.h']]],
+  ['opt4048_5freg_5fthreshold_5flow',['OPT4048_REG_THRESHOLD_LOW',['../_adafruit___o_p_t4048_8h.html#aaa927e57780f716b06bddd7e63353430',1,'Adafruit_OPT4048.h']]]
+];
