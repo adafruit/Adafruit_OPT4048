@@ -1,7 +1,8 @@
 /*!
  * @file Adafruit_OPT4048.cpp
  *
- * @mainpage Adafruit OPT4048 High Speed High Precision Tristimulus XYZ Color Sensor
+ * @mainpage Adafruit OPT4048 High Speed High Precision Tristimulus XYZ Color
+ * Sensor
  *
  * @section intro_sec Introduction
  *
@@ -26,9 +27,7 @@
 /**
  * @brief Construct a new Adafruit_OPT4048 object.
  */
-Adafruit_OPT4048::Adafruit_OPT4048() {
-  i2c_dev = nullptr;
-}
+Adafruit_OPT4048::Adafruit_OPT4048() { i2c_dev = nullptr; }
 
 /**
  * @brief Destroy the Adafruit_OPT4048 object, frees I2C device.
@@ -45,8 +44,6 @@ Adafruit_OPT4048::~Adafruit_OPT4048() {
  *
  * Deletes any existing I2C device instance, then creates a new one.
  *
- * @param addr I2C 7-bit address of the sensor (default OPT4048_DEFAULT_ADDR).
- * @param wire Pointer to TwoWire instance (default &Wire).
  * @return true if initialization was successful, false otherwise.
  */
 bool Adafruit_OPT4048::begin(uint8_t addr, TwoWire *wire) {
@@ -84,8 +81,8 @@ bool Adafruit_OPT4048::begin(uint8_t addr, TwoWire *wire) {
   // Set interrupt configuration to "data ready for all channels"
   setInterruptConfig(OPT4048_INT_CFG_DATA_READY_ALL);
 
-  setInterruptLatch(true);     // Use latched interrupts
-  setInterruptPolarity(true);  // Use active-high interrupts
+  setInterruptLatch(true);    // Use latched interrupts
+  setInterruptPolarity(true); // Use active-high interrupts
   setInterruptConfig(OPT4048_INT_CFG_DATA_READY_ALL);
 
   return true;
@@ -97,13 +94,10 @@ bool Adafruit_OPT4048::begin(uint8_t addr, TwoWire *wire) {
  * Reads registers for channels 0-3 in one burst, checks the CRC bits for each,
  * and computes the 20-bit ADC code = mantissa << exponent.
  *
- * @param ch0 Pointer to store channel 0 (X) ADC code.
- * @param ch1 Pointer to store channel 1 (Y) ADC code.
- * @param ch2 Pointer to store channel 2 (Z) ADC code.
- * @param ch3 Pointer to store channel 3 (W) ADC code.
  * @return true if read succeeds and all CRC checks pass, false otherwise.
  */
-bool Adafruit_OPT4048::getChannelsRaw(uint32_t *ch0, uint32_t *ch1, uint32_t *ch2, uint32_t *ch3) {
+bool Adafruit_OPT4048::getChannelsRaw(uint32_t *ch0, uint32_t *ch1,
+                                      uint32_t *ch2, uint32_t *ch3) {
   if (!i2c_dev) {
     return false;
   }
@@ -112,34 +106,34 @@ bool Adafruit_OPT4048::getChannelsRaw(uint32_t *ch0, uint32_t *ch1, uint32_t *ch
   if (!i2c_dev->write_then_read(&reg, 1, buf, sizeof(buf))) {
     return false;
   }
-  
+
   for (uint8_t ch = 0; ch < 4; ch++) {
-	uint8_t exp = (uint16_t)buf[4 * ch] >> 4;
+    uint8_t exp = (uint16_t)buf[4 * ch] >> 4;
     uint16_t msb = (((uint16_t)(buf[4 * ch] & 0xF)) << 8) | buf[4 * ch + 1];
     uint16_t lsb = ((uint16_t)buf[4 * ch + 2]);
-	uint8_t counter = buf[4 * ch + 3] >> 4;
-	uint8_t crc = buf[4 * ch + 3] & 0xF;
-	
+    uint8_t counter = buf[4 * ch + 3] >> 4;
+    uint8_t crc = buf[4 * ch + 3] & 0xF;
+
     uint32_t mant = ((uint32_t)msb << 8) | lsb;
-    
-	/*
-    // Debug output for each channel
-    Serial.print(F("DEBUG: CH"));
-    Serial.print(ch);
-    Serial.print(F(": MSB=0x"));
-    Serial.print(msb, HEX); 
-    Serial.print(F(", LSB=0x"));
-    Serial.print(lsb, HEX);
-    Serial.print(F(", count="));
-    Serial.print(counter);
-    Serial.print(F(", crc="));
-    Serial.print(crc);
-    Serial.print(F(", exp="));
-    Serial.print(exp);
-    Serial.print(F(", mant=0x"));
-    Serial.println(mant, HEX);
-    */
-	
+
+    /*
+// Debug output for each channel
+Serial.print(F("DEBUG: CH"));
+Serial.print(ch);
+Serial.print(F(": MSB=0x"));
+Serial.print(msb, HEX);
+Serial.print(F(", LSB=0x"));
+Serial.print(lsb, HEX);
+Serial.print(F(", count="));
+Serial.print(counter);
+Serial.print(F(", crc="));
+Serial.print(crc);
+Serial.print(F(", exp="));
+Serial.print(exp);
+Serial.print(F(", mant=0x"));
+Serial.println(mant, HEX);
+*/
+
     // Implementing CRC check based on the formula from the datasheet:
     // CRC bits for each channel:
     // R[19:0]=(RESULT_MSB_CH0[11:0]<<8)+RESULT_LSB_CH0[7:0]
@@ -148,20 +142,21 @@ bool Adafruit_OPT4048::getChannelsRaw(uint32_t *ch0, uint32_t *ch1, uint32_t *ch
     // X[2]=XOR(COUNTER_CHx[3],R[3],R[7],R[11],R[15],R[19],E[3])
     // X[3]=XOR(R[3],R[11],R[19])
 
-    // Note: COUNTER_CHx[3:0] is the CRC itself, which creates a circular reference
-    // We need to include it in our calculations to match the hardware implementation
+    // Note: COUNTER_CHx[3:0] is the CRC itself, which creates a circular
+    // reference We need to include it in our calculations to match the hardware
+    // implementation
 
     // Initialize CRC variables
-    uint8_t x0 = 0;  // CRC bit 0
-    uint8_t x1 = 0;  // CRC bit 1
-    uint8_t x2 = 0;  // CRC bit 2
-    uint8_t x3 = 0;  // CRC bit 3
+    uint8_t x0 = 0; // CRC bit 0
+    uint8_t x1 = 0; // CRC bit 1
+    uint8_t x2 = 0; // CRC bit 2
+    uint8_t x3 = 0; // CRC bit 3
 
     // Calculate each CRC bit according to the datasheet formula:
     // Calculate bit 0 (x0):
-    //X[0]=XOR(EXPONENT_CH0[3:0],R[19:0],COUNTER_CHx[3:0])
+    // X[0]=XOR(EXPONENT_CH0[3:0],R[19:0],COUNTER_CHx[3:0])
     x0 = 0;
-	
+
     // XOR all exponent bits
     for (uint8_t i = 0; i < 4; i++) {
       x0 ^= (exp >> i) & 1;
@@ -181,8 +176,8 @@ bool Adafruit_OPT4048::getChannelsRaw(uint32_t *ch0, uint32_t *ch1, uint32_t *ch
     // X[1]=XOR(COUNTER_CHx[1],COUNTER_CHx[3],R[1],R[3],R[5],R[7],R[9],R[11],R[13],R[15],R[17],R[19],E[1],E[3])
     x1 = 0;
     // Include counter bits 1 and 3
-    x1 ^= (counter >> 1) & 1;  // COUNTER_CHx[1]
-    x1 ^= (counter >> 3) & 1;  // COUNTER_CHx[3]
+    x1 ^= (counter >> 1) & 1; // COUNTER_CHx[1]
+    x1 ^= (counter >> 3) & 1; // COUNTER_CHx[3]
 
     // Include odd-indexed mantissa bits
     for (uint8_t i = 1; i < 20; i += 2) {
@@ -190,14 +185,14 @@ bool Adafruit_OPT4048::getChannelsRaw(uint32_t *ch0, uint32_t *ch1, uint32_t *ch
     }
 
     // Include exponent bits 1 and 3
-    x1 ^= (exp >> 1) & 1;  // E[1]
-    x1 ^= (exp >> 3) & 1;  // E[3]
+    x1 ^= (exp >> 1) & 1; // E[1]
+    x1 ^= (exp >> 3) & 1; // E[3]
 
     // Calculate bit 2 (x2) per datasheet:
     // X[2]=XOR(COUNTER_CHx[3],R[3],R[7],R[11],R[15],R[19],E[3])
     x2 = 0;
     // Include counter bit 3
-    x2 ^= (counter >> 3) & 1;  // COUNTER_CHx[3]
+    x2 ^= (counter >> 3) & 1; // COUNTER_CHx[3]
 
     // Include mantissa bits at positions 3,7,11,15,19
     for (uint8_t i = 3; i < 20; i += 4) {
@@ -205,71 +200,81 @@ bool Adafruit_OPT4048::getChannelsRaw(uint32_t *ch0, uint32_t *ch1, uint32_t *ch
     }
 
     // Include exponent bit 3
-    x2 ^= (exp >> 3) & 1;  // E[3]
+    x2 ^= (exp >> 3) & 1; // E[3]
 
     // Calculate bit 3 (x3) per datasheet:
     // X[3]=XOR(R[3],R[11],R[19])
     x3 = 0;
     // XOR mantissa bits at positions 3, 11, 19
-    x3 ^= (mant >> 3) & 1;   // R[3]
-    x3 ^= (mant >> 11) & 1;  // R[11]
-    x3 ^= (mant >> 19) & 1;  // R[19]
+    x3 ^= (mant >> 3) & 1;  // R[3]
+    x3 ^= (mant >> 11) & 1; // R[11]
+    x3 ^= (mant >> 19) & 1; // R[19]
 
     // Combine bits to form the CRC
     uint8_t calculated_crc = (x3 << 3) | (x2 << 2) | (x1 << 1) | x0;
 
     // Verify CRC
     if (crc != calculated_crc) {
-      //Serial.print(F("DEBUG: CRC check failed for channel "));
-      //Serial.println(ch);
+      // Serial.print(F("DEBUG: CRC check failed for channel "));
+      // Serial.println(ch);
       return false;
     }
 
-
     // Convert to 20-bit mantissa << exponent format
-    // This is safe because the sensor only uses exponents 0-6 in actual measurements
-    // (even when auto-range mode (12) is enabled in the configuration register)
-	uint32_t output = (uint32_t)mant << (uint32_t)exp;
+    // This is safe because the sensor only uses exponents 0-6 in actual
+    // measurements (even when auto-range mode (12) is enabled in the
+    // configuration register)
+    uint32_t output = (uint32_t)mant << (uint32_t)exp;
 
     // Assign output
     switch (ch) {
-      case 0: *ch0 = output; break;
-      case 1: *ch1 = output; break;
-      case 2: *ch2 = output; break;
-      case 3: *ch3 = output; break;
+    case 0:
+      *ch0 = output;
+      break;
+    case 1:
+      *ch1 = output;
+      break;
+    case 2:
+      *ch2 = output;
+      break;
+    case 3:
+      *ch3 = output;
+      break;
     }
   }
-  //Serial.println(F("DEBUG: All channel reads successful"));
+  // Serial.println(F("DEBUG: All channel reads successful"));
   return true;
 }
 
 /**
  * @brief Get the current low threshold value
- * 
+ *
  * Reads the low threshold register (0x08) and converts the exponent/mantissa
  * format to a single 32-bit value.
- * 
+ *
  * As per page 18 of the datasheet, threshold calculation is:
  * ADC_CODES_TL = THRESHOLD_L_RESULT << (8 + THRESHOLD_L_EXPONENT)
- * 
+ *
  * @return The current low threshold value
  */
 uint32_t Adafruit_OPT4048::getThresholdLow(void) {
   if (!i2c_dev) {
     return 0;
   }
-  
+
   // Create the register object for the threshold register
-  Adafruit_BusIO_Register threshold_reg(i2c_dev, OPT4048_REG_THRESHOLD_LOW, 2, MSBFIRST);
-  
-  // Create register bits for the exponent (top 4 bits) and mantissa (lower 12 bits)
+  Adafruit_BusIO_Register threshold_reg(i2c_dev, OPT4048_REG_THRESHOLD_LOW, 2,
+                                        MSBFIRST);
+
+  // Create register bits for the exponent (top 4 bits) and mantissa (lower 12
+  // bits)
   Adafruit_BusIO_RegisterBits exponent_bits(&threshold_reg, 4, 12);
   Adafruit_BusIO_RegisterBits mantissa_bits(&threshold_reg, 12, 0);
-  
+
   // Read the exponent and mantissa
   uint8_t exponent = exponent_bits.read();
   uint32_t mantissa = mantissa_bits.read();
-  
+
   // Calculate ADC code value by applying the exponent as a bit shift
   // ADD 8 to the exponent as per datasheet equations 12-13
   return mantissa << (8 + exponent);
@@ -277,13 +282,13 @@ uint32_t Adafruit_OPT4048::getThresholdLow(void) {
 
 /**
  * @brief Set the low threshold value for interrupt generation
- * 
+ *
  * Configures the low threshold register (0x08) with the given value in
  * the sensor's exponent/mantissa format.
- * 
+ *
  * Value is stored as THRESHOLD_L_RESULT and THRESHOLD_L_EXPONENT where:
  * ADC_CODES_TL = THRESHOLD_L_RESULT << (8 + THRESHOLD_L_EXPONENT)
- * 
+ *
  * @param thl The low threshold value
  * @return true if successful, false otherwise
  */
@@ -291,16 +296,17 @@ bool Adafruit_OPT4048::setThresholdLow(uint32_t thl) {
   if (!i2c_dev) {
     return false;
   }
-  
-  // Find the appropriate exponent and mantissa values that represent the threshold
-  // In this case, we need to find the smallest exponent that allows mantissa to fit in 12 bits
+
+  // Find the appropriate exponent and mantissa values that represent the
+  // threshold In this case, we need to find the smallest exponent that allows
+  // mantissa to fit in 12 bits
   uint8_t exponent = 0;
   uint32_t mantissa = thl;
-  
+
   // The mantissa needs to fit in 12 bits, so we start by shifting right
   // to determine how many shifts we need (which gives us the exponent)
-  // Note that the threshold registers already have 8 added to exponent internally
-  // so we first subtract 8 from our target exponent
+  // Note that the threshold registers already have 8 added to exponent
+  // internally so we first subtract 8 from our target exponent
   if (mantissa > 0xFFF) { // If value won't fit in 12 bits
     while (mantissa > 0xFFF && exponent < 15) {
       mantissa >>= 1;
@@ -308,51 +314,56 @@ bool Adafruit_OPT4048::setThresholdLow(uint32_t thl) {
     }
     if (mantissa > 0xFFF) { // If still won't fit with max exponent, clamp
       mantissa = 0xFFF;
-      exponent = 15 - 8; // Max exponent (15) minus the 8 that's added internally
+      exponent =
+          15 - 8; // Max exponent (15) minus the 8 that's added internally
     }
   }
-  
+
   // Create the register object for the threshold register
-  Adafruit_BusIO_Register threshold_reg(i2c_dev, OPT4048_REG_THRESHOLD_LOW, 2, MSBFIRST);
-  
-  // Create register bits for the exponent (top 4 bits) and mantissa (lower 12 bits)
+  Adafruit_BusIO_Register threshold_reg(i2c_dev, OPT4048_REG_THRESHOLD_LOW, 2,
+                                        MSBFIRST);
+
+  // Create register bits for the exponent (top 4 bits) and mantissa (lower 12
+  // bits)
   Adafruit_BusIO_RegisterBits exponent_bits(&threshold_reg, 4, 12);
   Adafruit_BusIO_RegisterBits mantissa_bits(&threshold_reg, 12, 0);
-  
+
   // Write the exponent and mantissa to the register
   exponent_bits.write(exponent);
   mantissa_bits.write(mantissa);
-  
+
   return true;
 }
 
 /**
  * @brief Get the current high threshold value
- * 
+ *
  * Reads the high threshold register (0x09) and converts the exponent/mantissa
  * format to a single 32-bit value.
- * 
+ *
  * As per page 18 of the datasheet, threshold calculation is:
  * ADC_CODES_TH = THRESHOLD_H_RESULT << (8 + THRESHOLD_H_EXPONENT)
- * 
+ *
  * @return The current high threshold value
  */
 uint32_t Adafruit_OPT4048::getThresholdHigh(void) {
   if (!i2c_dev) {
     return 0;
   }
-  
+
   // Create the register object for the threshold register
-  Adafruit_BusIO_Register threshold_reg(i2c_dev, OPT4048_REG_THRESHOLD_HIGH, 2, MSBFIRST);
-  
-  // Create register bits for the exponent (top 4 bits) and mantissa (lower 12 bits)
+  Adafruit_BusIO_Register threshold_reg(i2c_dev, OPT4048_REG_THRESHOLD_HIGH, 2,
+                                        MSBFIRST);
+
+  // Create register bits for the exponent (top 4 bits) and mantissa (lower 12
+  // bits)
   Adafruit_BusIO_RegisterBits exponent_bits(&threshold_reg, 4, 12);
   Adafruit_BusIO_RegisterBits mantissa_bits(&threshold_reg, 12, 0);
-  
+
   // Read the exponent and mantissa
   uint8_t exponent = exponent_bits.read();
   uint32_t mantissa = mantissa_bits.read();
-  
+
   // Calculate ADC code value by applying the exponent as a bit shift
   // ADD 8 to the exponent as per datasheet equations 10-11
   return mantissa << (8 + exponent);
@@ -360,13 +371,13 @@ uint32_t Adafruit_OPT4048::getThresholdHigh(void) {
 
 /**
  * @brief Set the high threshold value for interrupt generation
- * 
+ *
  * Configures the high threshold register (0x09) with the given value in
  * the sensor's exponent/mantissa format.
- * 
+ *
  * Value is stored as THRESHOLD_H_RESULT and THRESHOLD_H_EXPONENT where:
  * ADC_CODES_TH = THRESHOLD_H_RESULT << (8 + THRESHOLD_H_EXPONENT)
- * 
+ *
  * @param thh The high threshold value
  * @return true if successful, false otherwise
  */
@@ -374,16 +385,17 @@ bool Adafruit_OPT4048::setThresholdHigh(uint32_t thh) {
   if (!i2c_dev) {
     return false;
   }
-  
-  // Find the appropriate exponent and mantissa values that represent the threshold
-  // In this case, we need to find the smallest exponent that allows mantissa to fit in 12 bits
+
+  // Find the appropriate exponent and mantissa values that represent the
+  // threshold In this case, we need to find the smallest exponent that allows
+  // mantissa to fit in 12 bits
   uint8_t exponent = 0;
   uint32_t mantissa = thh;
-  
+
   // The mantissa needs to fit in 12 bits, so we start by shifting right
   // to determine how many shifts we need (which gives us the exponent)
-  // Note that the threshold registers already have 8 added to exponent internally
-  // so we first subtract 8 from our target exponent
+  // Note that the threshold registers already have 8 added to exponent
+  // internally so we first subtract 8 from our target exponent
   if (mantissa > 0xFFF) { // If value won't fit in 12 bits
     while (mantissa > 0xFFF && exponent < 15) {
       mantissa >>= 1;
@@ -391,36 +403,39 @@ bool Adafruit_OPT4048::setThresholdHigh(uint32_t thh) {
     }
     if (mantissa > 0xFFF) { // If still won't fit with max exponent, clamp
       mantissa = 0xFFF;
-      exponent = 15 - 8; // Max exponent (15) minus the 8 that's added internally
+      exponent =
+          15 - 8; // Max exponent (15) minus the 8 that's added internally
     }
   }
-  
+
   // Create the register object for the threshold register
-  Adafruit_BusIO_Register threshold_reg(i2c_dev, OPT4048_REG_THRESHOLD_HIGH, 2, MSBFIRST);
-  
-  // Create register bits for the exponent (top 4 bits) and mantissa (lower 12 bits)
+  Adafruit_BusIO_Register threshold_reg(i2c_dev, OPT4048_REG_THRESHOLD_HIGH, 2,
+                                        MSBFIRST);
+
+  // Create register bits for the exponent (top 4 bits) and mantissa (lower 12
+  // bits)
   Adafruit_BusIO_RegisterBits exponent_bits(&threshold_reg, 4, 12);
   Adafruit_BusIO_RegisterBits mantissa_bits(&threshold_reg, 12, 0);
-  
+
   // Write the exponent and mantissa to the register
   exponent_bits.write(exponent);
   mantissa_bits.write(mantissa);
-  
+
   return true;
 }
 
 /**
  * @brief Enable or disable Quick Wake-up feature
- * 
+ *
  * Controls the QWAKE bit (bit 15) in the configuration register (0x0A).
  * When enabled, the sensor doesn't power down completely in one-shot mode,
  * allowing faster wake-up from standby with lower power consumption.
- * 
+ *
  * From the datasheet (page 29):
- * "Quick Wake-up from Standby in one shot mode by not powering down all circuits. 
- * Applicable only in One-shot mode and helps get out of standby mode faster 
- * with penalty in power consumption compared to full standby mode."
- * 
+ * "Quick Wake-up from Standby in one shot mode by not powering down all
+ * circuits. Applicable only in One-shot mode and helps get out of standby mode
+ * faster with penalty in power consumption compared to full standby mode."
+ *
  * @param enable True to enable Quick Wake, false to disable
  * @return True if successful, false otherwise
  */
@@ -428,36 +443,36 @@ bool Adafruit_OPT4048::setQuickWake(bool enable) {
   if (!i2c_dev) {
     return false;
   }
-  
+
   // Create the register object for the configuration register
   Adafruit_BusIO_Register config_reg(i2c_dev, OPT4048_REG_CONFIG, 2, MSBFIRST);
-  
+
   // Create register bit for the QWAKE bit (bit 15)
   Adafruit_BusIO_RegisterBits qwake_bit(&config_reg, 1, 15);
-  
+
   // Set the QWAKE bit according to the enable parameter
   return qwake_bit.write(enable);
 }
 
 /**
  * @brief Get the current state of the Quick Wake feature
- * 
+ *
  * Reads the QWAKE bit (bit 15) from the configuration register (0x0A)
  * to determine if Quick Wake is enabled or disabled.
- * 
+ *
  * @return True if Quick Wake is enabled, false if disabled
  */
 bool Adafruit_OPT4048::getQuickWake(void) {
   if (!i2c_dev) {
     return false;
   }
-  
+
   // Create the register object for the configuration register
   Adafruit_BusIO_Register config_reg(i2c_dev, OPT4048_REG_CONFIG, 2, MSBFIRST);
-  
+
   // Create register bit for the QWAKE bit (bit 15)
   Adafruit_BusIO_RegisterBits qwake_bit(&config_reg, 1, 15);
-  
+
   // Read the QWAKE bit
   return qwake_bit.read();
 }
@@ -524,11 +539,12 @@ opt4048_range_t Adafruit_OPT4048::getRange(void) {
 /**
  * @brief Set the conversion time per channel
  *
- * Controls the CONVERSION_TIME field (bits 6-9) in the configuration register (0x0A).
- * This sets how long each channel will take to convert, ranging from 600 microseconds
- * to 800 milliseconds per channel.
+ * Controls the CONVERSION_TIME field (bits 6-9) in the configuration register
+ * (0x0A). This sets how long each channel will take to convert, ranging from
+ * 600 microseconds to 800 milliseconds per channel.
  *
- * @param convTime The conversion time setting from opt4048_conversion_time_t enum
+ * @param convTime The conversion time setting from opt4048_conversion_time_t
+ * enum
  * @return True if successful, false otherwise
  */
 bool Adafruit_OPT4048::setConversionTime(opt4048_conversion_time_t convTime) {
@@ -549,10 +565,11 @@ bool Adafruit_OPT4048::setConversionTime(opt4048_conversion_time_t convTime) {
 /**
  * @brief Get the current conversion time setting
  *
- * Reads the CONVERSION_TIME field (bits 6-9) from the configuration register (0x0A)
- * to determine the current conversion time setting.
+ * Reads the CONVERSION_TIME field (bits 6-9) from the configuration register
+ * (0x0A) to determine the current conversion time setting.
  *
- * @return The current conversion time setting as opt4048_conversion_time_t enum value
+ * @return The current conversion time setting as opt4048_conversion_time_t enum
+ * value
  */
 opt4048_conversion_time_t Adafruit_OPT4048::getConversionTime(void) {
   if (!i2c_dev) {
@@ -572,8 +589,9 @@ opt4048_conversion_time_t Adafruit_OPT4048::getConversionTime(void) {
 /**
  * @brief Set the operating mode of the sensor
  *
- * Controls the OPERATING_MODE field (bits 4-5) in the configuration register (0x0A).
- * This sets the device's operating mode: power-down, one-shot, or continuous.
+ * Controls the OPERATING_MODE field (bits 4-5) in the configuration register
+ * (0x0A). This sets the device's operating mode: power-down, one-shot, or
+ * continuous.
  *
  * @param mode The operating mode setting from opt4048_mode_t enum
  * @return True if successful, false otherwise
@@ -596,8 +614,8 @@ bool Adafruit_OPT4048::setMode(opt4048_mode_t mode) {
 /**
  * @brief Get the current operating mode setting
  *
- * Reads the OPERATING_MODE field (bits 4-5) from the configuration register (0x0A)
- * to determine the current operating mode.
+ * Reads the OPERATING_MODE field (bits 4-5) from the configuration register
+ * (0x0A) to determine the current operating mode.
  *
  * @return The current operating mode as opt4048_mode_t enum value
  */
@@ -622,8 +640,9 @@ opt4048_mode_t Adafruit_OPT4048::getMode(void) {
  * Controls the LATCH bit (bit 3) in the configuration register (0x0A).
  * This sets whether interrupts are latched or transparent.
  *
- * When latched (true), the interrupt pin remains active until the flag registers
- * are read, regardless of whether the interrupt condition still exists.
+ * When latched (true), the interrupt pin remains active until the flag
+ * registers are read, regardless of whether the interrupt condition still
+ * exists.
  *
  * When transparent/non-latched (false), the interrupt pin state is updated with
  * each measurement and reflects the current comparison result.
@@ -720,9 +739,9 @@ bool Adafruit_OPT4048::getInterruptPolarity(void) {
 /**
  * @brief Set the fault count for interrupt generation
  *
- * Controls the FAULT_COUNT field (bits 0-1) in the configuration register (0x0A).
- * This sets how many consecutive measurements must be above/below thresholds
- * before an interrupt is triggered.
+ * Controls the FAULT_COUNT field (bits 0-1) in the configuration register
+ * (0x0A). This sets how many consecutive measurements must be above/below
+ * thresholds before an interrupt is triggered.
  *
  * @param count The fault count setting from opt4048_fault_count_t enum
  * @return True if successful, false otherwise
@@ -768,8 +787,9 @@ opt4048_fault_count_t Adafruit_OPT4048::getFaultCount(void) {
 /**
  * @brief Set the channel to be used for threshold comparison
  *
- * Controls the THRESHOLD_CH_SEL field (bits 5-6) in the threshold configuration register (0x0B).
- * This sets which channel's ADC code is compared against the thresholds.
+ * Controls the THRESHOLD_CH_SEL field (bits 5-6) in the threshold configuration
+ * register (0x0B). This sets which channel's ADC code is compared against the
+ * thresholds.
  *
  * @param channel Channel number (0-3) to use for threshold comparison:
  *                0 = Channel 0 (X)
@@ -784,7 +804,8 @@ bool Adafruit_OPT4048::setThresholdChannel(uint8_t channel) {
   }
 
   // Create the register object for the threshold configuration register
-  Adafruit_BusIO_Register thresh_cfg_reg(i2c_dev, OPT4048_REG_THRESHOLD_CFG, 2, MSBFIRST);
+  Adafruit_BusIO_Register thresh_cfg_reg(i2c_dev, OPT4048_REG_THRESHOLD_CFG, 2,
+                                         MSBFIRST);
 
   // Create register bits for the THRESHOLD_CH_SEL field (bits 5-6)
   Adafruit_BusIO_RegisterBits thresh_ch_sel_bits(&thresh_cfg_reg, 2, 5);
@@ -796,8 +817,9 @@ bool Adafruit_OPT4048::setThresholdChannel(uint8_t channel) {
 /**
  * @brief Get the channel currently used for threshold comparison
  *
- * Reads the THRESHOLD_CH_SEL field (bits 5-6) from the threshold configuration register (0x0B)
- * to determine which channel is being used for threshold comparison.
+ * Reads the THRESHOLD_CH_SEL field (bits 5-6) from the threshold configuration
+ * register (0x0B) to determine which channel is being used for threshold
+ * comparison.
  *
  * @return The channel number (0-3) currently used for threshold comparison:
  *         0 = Channel 0 (X)
@@ -811,7 +833,8 @@ uint8_t Adafruit_OPT4048::getThresholdChannel(void) {
   }
 
   // Create the register object for the threshold configuration register
-  Adafruit_BusIO_Register thresh_cfg_reg(i2c_dev, OPT4048_REG_THRESHOLD_CFG, 2, MSBFIRST);
+  Adafruit_BusIO_Register thresh_cfg_reg(i2c_dev, OPT4048_REG_THRESHOLD_CFG, 2,
+                                         MSBFIRST);
 
   // Create register bits for the THRESHOLD_CH_SEL field (bits 5-6)
   Adafruit_BusIO_RegisterBits thresh_ch_sel_bits(&thresh_cfg_reg, 2, 5);
@@ -823,12 +846,12 @@ uint8_t Adafruit_OPT4048::getThresholdChannel(void) {
 /**
  * @brief Set the direction of the interrupt generation
  *
- * Controls the INT_DIR bit (bit 4) in the threshold configuration register (0x0B).
- * This sets whether an interrupt is generated when the measured value is below
- * the low threshold or above the high threshold.
+ * Controls the INT_DIR bit (bit 4) in the threshold configuration register
+ * (0x0B). This sets whether an interrupt is generated when the measured value
+ * is below the low threshold or above the high threshold.
  *
- * @param thresholdHighActive True for interrupt when measurement > high threshold,
- *                           false for interrupt when measurement < low threshold
+ * @param thresholdHighActive True for interrupt when measurement > high
+ * threshold, false for interrupt when measurement < low threshold
  * @return True if successful, false otherwise
  */
 bool Adafruit_OPT4048::setInterruptDirection(bool thresholdHighActive) {
@@ -837,7 +860,8 @@ bool Adafruit_OPT4048::setInterruptDirection(bool thresholdHighActive) {
   }
 
   // Create the register object for the threshold configuration register
-  Adafruit_BusIO_Register thresh_cfg_reg(i2c_dev, OPT4048_REG_THRESHOLD_CFG, 2, MSBFIRST);
+  Adafruit_BusIO_Register thresh_cfg_reg(i2c_dev, OPT4048_REG_THRESHOLD_CFG, 2,
+                                         MSBFIRST);
 
   // Create register bit for the INT_DIR bit (bit 4)
   Adafruit_BusIO_RegisterBits int_dir_bit(&thresh_cfg_reg, 1, 4);
@@ -849,8 +873,8 @@ bool Adafruit_OPT4048::setInterruptDirection(bool thresholdHighActive) {
 /**
  * @brief Get the current interrupt direction setting
  *
- * Reads the INT_DIR bit (bit 4) from the threshold configuration register (0x0B)
- * to determine the current interrupt direction.
+ * Reads the INT_DIR bit (bit 4) from the threshold configuration register
+ * (0x0B) to determine the current interrupt direction.
  *
  * @return True if interrupts are generated when measurement > high threshold,
  *         false if interrupts are generated when measurement < low threshold
@@ -861,7 +885,8 @@ bool Adafruit_OPT4048::getInterruptDirection(void) {
   }
 
   // Create the register object for the threshold configuration register
-  Adafruit_BusIO_Register thresh_cfg_reg(i2c_dev, OPT4048_REG_THRESHOLD_CFG, 2, MSBFIRST);
+  Adafruit_BusIO_Register thresh_cfg_reg(i2c_dev, OPT4048_REG_THRESHOLD_CFG, 2,
+                                         MSBFIRST);
 
   // Create register bit for the INT_DIR bit (bit 4)
   Adafruit_BusIO_RegisterBits int_dir_bit(&thresh_cfg_reg, 1, 4);
@@ -873,8 +898,8 @@ bool Adafruit_OPT4048::getInterruptDirection(void) {
 /**
  * @brief Set the interrupt configuration
  *
- * Controls the INT_CFG field (bits 2-3) in the threshold configuration register (0x0B).
- * This sets the interrupt mechanism after end of conversion.
+ * Controls the INT_CFG field (bits 2-3) in the threshold configuration register
+ * (0x0B). This sets the interrupt mechanism after end of conversion.
  *
  * @param config The interrupt configuration setting from opt4048_int_cfg_t enum
  * @return True if successful, false otherwise
@@ -885,7 +910,8 @@ bool Adafruit_OPT4048::setInterruptConfig(opt4048_int_cfg_t config) {
   }
 
   // Create the register object for the threshold configuration register
-  Adafruit_BusIO_Register thresh_cfg_reg(i2c_dev, OPT4048_REG_THRESHOLD_CFG, 2, MSBFIRST);
+  Adafruit_BusIO_Register thresh_cfg_reg(i2c_dev, OPT4048_REG_THRESHOLD_CFG, 2,
+                                         MSBFIRST);
 
   // Create register bits for the INT_CFG field (bits 2-3)
   Adafruit_BusIO_RegisterBits int_cfg_bits(&thresh_cfg_reg, 2, 2);
@@ -897,8 +923,8 @@ bool Adafruit_OPT4048::setInterruptConfig(opt4048_int_cfg_t config) {
 /**
  * @brief Get the current interrupt configuration
  *
- * Reads the INT_CFG field (bits 2-3) from the threshold configuration register (0x0B)
- * to determine the current interrupt configuration.
+ * Reads the INT_CFG field (bits 2-3) from the threshold configuration register
+ * (0x0B) to determine the current interrupt configuration.
  *
  * @return The current interrupt configuration as opt4048_int_cfg_t enum value
  */
@@ -908,7 +934,8 @@ opt4048_int_cfg_t Adafruit_OPT4048::getInterruptConfig(void) {
   }
 
   // Create the register object for the threshold configuration register
-  Adafruit_BusIO_Register thresh_cfg_reg(i2c_dev, OPT4048_REG_THRESHOLD_CFG, 2, MSBFIRST);
+  Adafruit_BusIO_Register thresh_cfg_reg(i2c_dev, OPT4048_REG_THRESHOLD_CFG, 2,
+                                         MSBFIRST);
 
   // Create register bits for the INT_CFG field (bits 2-3)
   Adafruit_BusIO_RegisterBits int_cfg_bits(&thresh_cfg_reg, 2, 2);
@@ -920,8 +947,8 @@ opt4048_int_cfg_t Adafruit_OPT4048::getInterruptConfig(void) {
 /**
  * @brief Get the current status flags
  *
- * Reads the status register (0x0C) to determine the current state of various flags.
- * Reading this register also clears latched interrupt flags.
+ * Reads the status register (0x0C) to determine the current state of various
+ * flags. Reading this register also clears latched interrupt flags.
  *
  * @return 8-bit value where:
  *   - bit 0 (0x01): FLAG_L - Flag low (measurement below threshold)
@@ -1017,15 +1044,14 @@ bool Adafruit_OPT4048::getCIE(double *CIEx, double *CIEy, double *lux) {
 /**
  * @brief Calculate the correlated color temperature (CCT) in Kelvin
  *
- * Uses McCamy's approximation formula to calculate CCT from CIE 1931 x,y coordinates.
- * This is accurate for color temperatures between 2000K and 30000K.
+ * Uses McCamy's approximation formula to calculate CCT from CIE 1931 x,y
+ * coordinates. This is accurate for color temperatures between 2000K and
+ * 30000K.
  *
  * Formula:
  * n = (x - 0.3320) / (0.1858 - y)
  * CCT = 437 * n^3 + 3601 * n^2 + 6861 * n + 5517
  *
- * @param CIEx The CIE x chromaticity coordinate
- * @param CIEy The CIE y chromaticity coordinate
  * @return The calculated color temperature in Kelvin
  */
 double Adafruit_OPT4048::calculateColorTemperature(double CIEx, double CIEy) {
