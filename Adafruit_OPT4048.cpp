@@ -124,25 +124,17 @@ bool Adafruit_OPT4048::getChannelsRaw(uint32_t *ch0, uint32_t *ch1, uint32_t *ch
     Serial.println(F("DEBUG: I2C write_then_read failed"));
     return false;
   }
-
-  // Debug: print the received data
-  Serial.print(F("DEBUG: Raw data: "));
-  for (uint8_t i = 0; i < 16; i++) {
-    Serial.print(F("0x"));
-    Serial.print(buf[i], HEX);
-    Serial.print(F(", "));
-  }
-  Serial.println();
-
+  
   for (uint8_t ch = 0; ch < 4; ch++) {
-	uint8_t exp = (uint16_t)buf[4 * ch] >> 4)
+	uint8_t exp = (uint16_t)buf[4 * ch] >> 4;
     uint16_t msb = (((uint16_t)(buf[4 * ch] & 0xF)) << 8) | buf[4 * ch + 1];
     uint16_t lsb = ((uint16_t)buf[4 * ch + 2]);
 	uint8_t counter = buf[4 * ch + 3] >> 4;
 	uint8_t crc = buf[4 * ch + 3] & 0xF;
 	
     uint32_t mant = ((uint32_t)msb << 8) | lsb;
-
+    
+	/*
     // Debug output for each channel
     Serial.print(F("DEBUG: CH"));
     Serial.print(ch);
@@ -158,11 +150,8 @@ bool Adafruit_OPT4048::getChannelsRaw(uint32_t *ch0, uint32_t *ch1, uint32_t *ch
     Serial.print(exp);
     Serial.print(F(", mant=0x"));
     Serial.println(mant, HEX);
-
-    // Convert to 20-bit mantissa << exponent format
-    // This is safe because the sensor only uses exponents 0-6 in actual measurements
-    // (even when auto-range mode (12) is enabled in the configuration register)
-
+    */
+	
     // Implementing CRC check based on the formula from the datasheet:
     // CRC bits for each channel:
     // R[19:0]=(RESULT_MSB_CH0[11:0]<<8)+RESULT_LSB_CH0[7:0]
@@ -184,10 +173,7 @@ bool Adafruit_OPT4048::getChannelsRaw(uint32_t *ch0, uint32_t *ch1, uint32_t *ch
     // Calculate bit 0 (x0):
     //X[0]=XOR(EXPONENT_CH0[3:0],R[19:0],COUNTER_CHx[3:0])
     x0 = 0;
-
-    // The COUNTER_CHx[3:0] is the CRC itself
-    uint8_t counter = crc;
-
+	
     // XOR all exponent bits
     for (uint8_t i = 0; i < 4; i++) {
       x0 ^= (exp >> i) & 1;
@@ -244,48 +230,28 @@ bool Adafruit_OPT4048::getChannelsRaw(uint32_t *ch0, uint32_t *ch1, uint32_t *ch
     // Combine bits to form the CRC
     uint8_t calculated_crc = (x3 << 3) | (x2 << 2) | (x1 << 1) | x0;
 
-    // Debug CRC values
-    Serial.print(F("DEBUG: CRC=0x"));
-    Serial.print(crc, HEX);
-    Serial.print(F(", Calculated: x0="));
-    Serial.print(x0);
-    Serial.print(F(", x1="));
-    Serial.print(x1);
-    Serial.print(F(", x2="));
-    Serial.print(x2);
-    Serial.print(F(", x3="));
-    Serial.print(x3);
-    Serial.print(F(", Combined CRC=0x"));
-    Serial.println(calculated_crc, HEX);
-
-    // Additional debug to inspect the data structure more closely
-    Serial.print(F("DEBUG: Raw bytes for CH"));
-    Serial.print(ch);
-    Serial.print(F(": 0x"));
-    Serial.print(buf[4*ch], HEX);
-    Serial.print(F(" 0x"));
-    Serial.print(buf[4*ch+1], HEX);
-    Serial.print(F(" 0x"));
-    Serial.print(buf[4*ch+2], HEX);
-    Serial.print(F(" 0x"));
-    Serial.println(buf[4*ch+3], HEX);
-
     // Verify CRC
     if (crc != calculated_crc) {
-      Serial.print(F("DEBUG: CRC check failed for channel "));
+      //Serial.print(F("DEBUG: CRC check failed for channel "));
       Serial.println(ch);
       return false;
     }
 
+
+    // Convert to 20-bit mantissa << exponent format
+    // This is safe because the sensor only uses exponents 0-6 in actual measurements
+    // (even when auto-range mode (12) is enabled in the configuration register)
+	uint32_t output = (uint32_t)mant << (uint32_t)exp;
+
     // Assign output
     switch (ch) {
-      case 0: *ch0 = code; break;
-      case 1: *ch1 = code; break;
-      case 2: *ch2 = code; break;
-      case 3: *ch3 = code; break;
+      case 0: *ch0 = output; break;
+      case 1: *ch1 = output; break;
+      case 2: *ch2 = output; break;
+      case 3: *ch3 = output; break;
     }
   }
-  Serial.println(F("DEBUG: All channel reads successful"));
+  //Serial.println(F("DEBUG: All channel reads successful"));
   return true;
 }
 
