@@ -135,18 +135,25 @@ bool Adafruit_OPT4048::getChannelsRaw(uint32_t *ch0, uint32_t *ch1, uint32_t *ch
   Serial.println();
 
   for (uint8_t ch = 0; ch < 4; ch++) {
-    uint16_t msb = ((uint16_t)buf[4 * ch] << 8) | buf[4 * ch + 1];
-    uint16_t lsb = ((uint16_t)buf[4 * ch + 2] << 8) | buf[4 * ch + 3];
-    uint8_t exp = (msb >> 12) & 0x0F;
-    uint32_t mant = ((msb & 0x0FFF) << 8) | ((lsb >> 8) & 0xFF);
+	uint8_t exp = (uint16_t)buf[4 * ch] >> 4)
+    uint16_t msb = (((uint16_t)(buf[4 * ch] & 0xF)) << 8) | buf[4 * ch + 1];
+    uint16_t lsb = ((uint16_t)buf[4 * ch + 2]);
+	uint8_t counter = buf[4 * ch + 3] >> 4;
+	uint8_t crc = buf[4 * ch + 3] & 0xF;
+	
+    uint32_t mant = ((uint32_t)msb << 8) | lsb;
 
     // Debug output for each channel
     Serial.print(F("DEBUG: CH"));
     Serial.print(ch);
     Serial.print(F(": MSB=0x"));
-    Serial.print(msb, HEX);
+    Serial.print(msb, HEX); dsd
     Serial.print(F(", LSB=0x"));
     Serial.print(lsb, HEX);
+    Serial.print(F(", count="));
+    Serial.print(counter);
+    Serial.print(F(", crc="));
+    Serial.print(crc);
     Serial.print(F(", exp="));
     Serial.print(exp);
     Serial.print(F(", mant=0x"));
@@ -155,8 +162,6 @@ bool Adafruit_OPT4048::getChannelsRaw(uint32_t *ch0, uint32_t *ch1, uint32_t *ch
     // Convert to 20-bit mantissa << exponent format
     // This is safe because the sensor only uses exponents 0-6 in actual measurements
     // (even when auto-range mode (12) is enabled in the configuration register)
-    uint32_t code = mant << exp;
-    uint8_t crc = lsb & 0x0F;
 
     // Implementing CRC check based on the formula from the datasheet:
     // CRC bits for each channel:
@@ -177,7 +182,7 @@ bool Adafruit_OPT4048::getChannelsRaw(uint32_t *ch0, uint32_t *ch1, uint32_t *ch
 
     // Calculate each CRC bit according to the datasheet formula:
     // Calculate bit 0 (x0):
-    // X[0]=XOR(EXPONENT_CH0[3:0],R[19:0],COUNTER_CHx[3:0])
+    //X[0]=XOR(EXPONENT_CH0[3:0],R[19:0],COUNTER_CHx[3:0])
     x0 = 0;
 
     // The COUNTER_CHx[3:0] is the CRC itself
