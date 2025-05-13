@@ -175,6 +175,16 @@ public:
   uint8_t getFlags(void);
   bool getCIE(double *CIEx, double *CIEy, double *lux);
 
+  /**
+   * @brief Calculate the correlated color temperature (CCT) in Kelvin
+   *
+   * Uses the McCamy's approximation formula to calculate CCT from CIE 1931 x,y coordinates.
+   * This is accurate for color temperatures between 2000K and 30000K.
+   *
+   * @return The calculated color temperature in Kelvin, or 0 if calculation failed
+   */
+  double getColorTemperature(void);
+
 private:
   Adafruit_I2CDevice *i2c_dev;
   void encodeValue(uint32_t value, uint8_t *exp, uint32_t *mant);

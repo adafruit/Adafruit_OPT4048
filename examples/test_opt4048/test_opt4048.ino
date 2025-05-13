@@ -220,6 +220,12 @@ void loop() {
       Serial.print(F("CIE x: ")); Serial.println(CIEx, 8);
       Serial.print(F("CIE y: ")); Serial.println(CIEy, 8);
       Serial.print(F("Lux: ")); Serial.println(lux, 4);
+
+      // Calculate and display color temperature
+      double colorTemp = sensor.getColorTemperature();
+      Serial.print(F("Color Temperature: "));
+      Serial.print(colorTemp, 2);
+      Serial.println(F(" K"));
     } else {
       Serial.println(F("\nError calculating CIE coordinates"));
     }
