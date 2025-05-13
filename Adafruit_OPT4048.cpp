@@ -147,7 +147,7 @@ bool Adafruit_OPT4048::getChannelsRaw(uint32_t *ch0, uint32_t *ch1, uint32_t *ch
     Serial.print(F("DEBUG: CH"));
     Serial.print(ch);
     Serial.print(F(": MSB=0x"));
-    Serial.print(msb, HEX); dsd
+    Serial.print(msb, HEX); 
     Serial.print(F(", LSB=0x"));
     Serial.print(lsb, HEX);
     Serial.print(F(", count="));
