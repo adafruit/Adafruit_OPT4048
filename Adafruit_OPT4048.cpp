@@ -27,7 +27,9 @@
 /**
  * @brief Construct a new Adafruit_OPT4048 object.
  */
-Adafruit_OPT4048::Adafruit_OPT4048() { i2c_dev = nullptr; }
+Adafruit_OPT4048::Adafruit_OPT4048() {
+  i2c_dev = nullptr;
+}
 
 /**
  * @brief Destroy the Adafruit_OPT4048 object, frees I2C device.
@@ -46,7 +48,7 @@ Adafruit_OPT4048::~Adafruit_OPT4048() {
  *
  * @return true if initialization was successful, false otherwise.
  */
-bool Adafruit_OPT4048::begin(uint8_t addr, TwoWire *wire) {
+bool Adafruit_OPT4048::begin(uint8_t addr, TwoWire* wire) {
   // Clean up old instance if reinitializing
   if (i2c_dev) {
     delete i2c_dev;
@@ -96,8 +98,8 @@ bool Adafruit_OPT4048::begin(uint8_t addr, TwoWire *wire) {
  *
  * @return true if read succeeds and all CRC checks pass, false otherwise.
  */
-bool Adafruit_OPT4048::getChannelsRaw(uint32_t *ch0, uint32_t *ch1,
-                                      uint32_t *ch2, uint32_t *ch3) {
+bool Adafruit_OPT4048::getChannelsRaw(uint32_t* ch0, uint32_t* ch1,
+                                      uint32_t* ch2, uint32_t* ch3) {
   if (!i2c_dev) {
     return false;
   }
@@ -228,18 +230,18 @@ Serial.println(mant, HEX);
 
     // Assign output
     switch (ch) {
-    case 0:
-      *ch0 = output;
-      break;
-    case 1:
-      *ch1 = output;
-      break;
-    case 2:
-      *ch2 = output;
-      break;
-    case 3:
-      *ch3 = output;
-      break;
+      case 0:
+        *ch0 = output;
+        break;
+      case 1:
+        *ch1 = output;
+        break;
+      case 2:
+        *ch2 = output;
+        break;
+      case 3:
+        *ch3 = output;
+        break;
     }
   }
   // Serial.println(F("DEBUG: All channel reads successful"));
@@ -980,7 +982,7 @@ uint8_t Adafruit_OPT4048::getFlags(void) {
  * @param lux Pointer to store the calculated illuminance in lux
  * @return True if calculation succeeded, false otherwise
  */
-bool Adafruit_OPT4048::getCIE(double *CIEx, double *CIEy, double *lux) {
+bool Adafruit_OPT4048::getCIE(double* CIEx, double* CIEy, double* lux) {
   if (!i2c_dev || !CIEx || !CIEy || !lux) {
     return false;
   }
