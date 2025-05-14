@@ -5,6 +5,9 @@
  * in a format suitable for displaying on a web page using Web Serial API.
  * 
  * It continuously measures CIE x,y coordinates, lux, and color temperature.
+ * 
+ * This sketch works with the web interface in the /webserial directory,
+ * which can be accessed at: https://adafruit.github.io/Adafruit_OPT4048/webserial/
  */
 
 #include <Wire.h>

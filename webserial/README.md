@@ -6,9 +6,9 @@ This web interface allows you to visualize color measurements from an Adafruit O
 
 1. **Upload the Arduino sketch**: First, upload the `opt4048_webserial.ino` sketch from the examples folder to your Arduino board.
 
-2. **Connect to this web page**: You can either:
-   - Host the page locally 
-   - Use GitHub Pages (if this repository is published there)
+2. **Connect to this web page**: You can access it at:
+   - https://adafruit.github.io/Adafruit_OPT4048/webserial/
+   - Or host the page locally for development
 
 3. **Connect to your Arduino**: Click the "Connect to Arduino" button and select your Arduino from the popup menu.
 
