@@ -26,6 +26,7 @@ jobs:
       env:
         GH_REPO_TOKEN: ${{ secrets.GH_REPO_TOKEN }}
         PRETTYNAME : "Adafruit OPT4048 Arduino Library"
+        PRESERVE_FOLDERS: "webserial"
       run: bash ci/doxy_gen_and_deploy.sh
 
     - name: test platforms
