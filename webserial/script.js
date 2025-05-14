@@ -21,11 +21,42 @@ const cctDisplay = document.getElementById('cct');
 const colorSample = document.getElementById('color-sample');
 const debugCoordinates = document.getElementById('debug-coordinates');
 
+// Add a test plotting function
+function testPlotPoint() {
+  // Test with fixed values at 25%, 50%, and 75% across the CIE diagram
+  const testPoints = [
+    { x: 0.2, y: 0.3, label: "Test point 1 (0.2, 0.3)" },
+    { x: 0.4, y: 0.45, label: "Test point 2 (0.4, 0.45)" },
+    { x: 0.6, y: 0.6, label: "Test point 3 (0.6, 0.6)" }
+  ];
+  
+  // Get next test point (rotate through them)
+  const currentTest = parseInt(localStorage.getItem('currentTestPoint') || '0');
+  const nextTest = (currentTest + 1) % testPoints.length;
+  localStorage.setItem('currentTestPoint', nextTest);
+  
+  const testPoint = testPoints[nextTest];
+  
+  // Update the data displays
+  cieXDisplay.textContent = testPoint.x.toFixed(6);
+  cieYDisplay.textContent = testPoint.y.toFixed(6);
+  
+  // Call the plot function
+  updateCIEPlot(testPoint.x, testPoint.y);
+  
+  // Show test information
+  addToLog(`Testing point: ${testPoint.label}`, 'status');
+  debugCoordinates.textContent = `TEST MODE: ${testPoint.label}`;
+}
+
 // Check if Web Serial API is supported
 if ('serial' in navigator) {
   connectButton.addEventListener('click', connectToArduino);
   disconnectButton.addEventListener('click', disconnectFromArduino);
   clearButton.addEventListener('click', clearLog);
+  
+  // Add test button event
+  document.getElementById('test-plot-button').addEventListener('click', testPlotPoint);
   
   // Add click event to CIE diagram to toggle debug view
   document.getElementById('cie-diagram').addEventListener('click', function() {
@@ -154,11 +185,26 @@ function processSerialData(data) {
 
 // Parse data from a line received from Arduino
 function parseDataFromLine(line) {
+  // Log the raw line
+  console.log("Data received:", line);
+  
   // Look for CIE x value
   const cieXMatch = line.match(/CIE x: ([\d.]+)/);
   if (cieXMatch) {
     const cieX = parseFloat(cieXMatch[1]);
     cieXDisplay.textContent = cieX.toFixed(6);
+    console.log("Found CIE x:", cieX);
+    
+    // If we have a y value already stored in the display
+    const cieYStr = cieYDisplay.textContent;
+    if (cieYStr !== '-') {
+      const cieY = parseFloat(cieYStr);
+      console.log("Using existing CIE y:", cieY);
+      if (!isNaN(cieY)) {
+        // Update the plot with the current x,y pair
+        updateCIEPlot(cieX, cieY);
+      }
+    }
   }
   
   // Look for CIE y value
@@ -166,11 +212,17 @@ function parseDataFromLine(line) {
   if (cieYMatch) {
     const cieY = parseFloat(cieYMatch[1]);
     cieYDisplay.textContent = cieY.toFixed(6);
+    console.log("Found CIE y:", cieY);
     
-    // If we have both x and y, update the plot
-    if (cieXMatch) {
-      const cieX = parseFloat(cieXMatch[1]);
-      updateCIEPlot(cieX, cieY);
+    // If we have an x value already stored in the display
+    const cieXStr = cieXDisplay.textContent;
+    if (cieXStr !== '-' && cieXMatch === null) {  // Only use stored x if not found on this line
+      const cieX = parseFloat(cieXStr);
+      console.log("Using existing CIE x:", cieX);
+      if (!isNaN(cieX)) {
+        // Update the plot with the current x,y pair
+        updateCIEPlot(cieX, cieY);
+      }
     }
   }
   
@@ -179,6 +231,7 @@ function parseDataFromLine(line) {
   if (luxMatch) {
     const lux = parseFloat(luxMatch[1]);
     luxDisplay.textContent = lux.toFixed(2);
+    console.log("Found Lux:", lux);
   }
   
   // Look for Color Temperature value
@@ -186,6 +239,20 @@ function parseDataFromLine(line) {
   if (cctMatch) {
     const cct = parseFloat(cctMatch[1]);
     cctDisplay.textContent = cct.toFixed(0);
+    console.log("Found CCT:", cct);
+    
+    // If we have both x and y values by now, let's try to update the plot again
+    const cieXStr = cieXDisplay.textContent;
+    const cieYStr = cieYDisplay.textContent;
+    if (cieXStr !== '-' && cieYStr !== '-') {
+      const cieX = parseFloat(cieXStr);
+      const cieY = parseFloat(cieYStr);
+      if (!isNaN(cieX) && !isNaN(cieY)) {
+        // Final attempt to update plot
+        updateCIEPlot(cieX, cieY);
+        console.log("Updating plot after CCT with:", cieX, cieY);
+      }
+    }
   }
 }
 
