@@ -189,24 +189,38 @@ function parseDataFromLine(line) {
   }
 }
 
+// Initialize debug coordinates
+document.addEventListener('DOMContentLoaded', function() {
+  debugCoordinates.textContent = 'Waiting for color data...';
+});
+
 // Update the CIE plot with new data point
 function updateCIEPlot(x, y) {
   console.log(`Plotting CIE coordinates: x=${x}, y=${y}`); // Debug log
   
   // Get the dimensions of the CIE diagram container
   const cieDiagram = document.getElementById('cie-diagram');
-  const cieImage = document.querySelector('#cie-diagram img');
   
   // Ensure we're only working with valid x,y coordinates
   if (isNaN(x) || isNaN(y) || x < 0 || y < 0 || x > 1 || y > 1) {
     console.warn(`Invalid CIE coordinates: x=${x}, y=${y}`);
+    debugCoordinates.textContent = `Invalid coordinates: x=${x}, y=${y}`;
     return;
   }
   
-  // Simple percentages based on the diagram bounds
+  // Adjust coordinates to fit the visible area of the CIE diagram
   // CIE diagram typically has coordinates: x [0-0.8], y [0-0.9]
-  const xPercent = (x / 0.8) * 100; // Scale to percentage of max x (0.8)
-  const yPercent = (1 - (y / 0.9)) * 100; // Invert y-axis and scale to percentage of max y (0.9)
+  const xMax = 0.8;
+  const yMax = 0.9;
+  
+  // Get actual dimensions of the CIE diagram image
+  const cieImage = document.querySelector('#cie-diagram img');
+  const imgWidth = cieImage.clientWidth;
+  const imgHeight = cieImage.clientHeight;
+  
+  // Calculate percentage positions within the SVG viewBox
+  const xPercent = (x / xMax) * 100; // Scale to percentage of max x (0.8)
+  const yPercent = (1 - (y / yMax)) * 100; // Invert y-axis and scale to percentage of max y (0.9)
   
   console.log(`Plotting at: left=${xPercent}%, top=${yPercent}%`); // Debug log
   
@@ -215,9 +229,8 @@ function updateCIEPlot(x, y) {
   dataPoint.style.top = `${yPercent}%`;
   dataPoint.style.display = 'block';
   
-  // Show debug coordinates for troubleshooting (can be toggled by clicking on the diagram)
-  debugCoordinates.textContent = `x: ${x.toFixed(4)}, y: ${y.toFixed(4)} → pos: ${Math.round(xPercent)}%, ${Math.round(yPercent)}%`;
-  debugCoordinates.style.display = 'block';
+  // Show debug coordinates for troubleshooting
+  debugCoordinates.textContent = `CIE: (${x.toFixed(4)}, ${y.toFixed(4)}) → Position: (${Math.round(xPercent)}%, ${Math.round(yPercent)}%)`;
   
   // Update the color sample with an approximate RGB color
   updateColorSample(x, y);
@@ -258,7 +271,7 @@ function updateColorSample(x, y) {
 // Hide the data point and reset all displays
 function hideDataPoint() {
   dataPoint.style.display = 'none';
-  debugCoordinates.style.display = 'none';
+  debugCoordinates.textContent = 'Waiting for color data...';
   cieXDisplay.textContent = '-';
   cieYDisplay.textContent = '-';
   luxDisplay.textContent = '-';

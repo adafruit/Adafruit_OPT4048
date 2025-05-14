@@ -35,17 +35,24 @@
       height: auto;
       display: block;
     }
+    @keyframes pulse {
+      0% { transform: translate(-50%, -50%) scale(1); }
+      50% { transform: translate(-50%, -50%) scale(1.3); }
+      100% { transform: translate(-50%, -50%) scale(1); }
+    }
+    
     #data-point {
       position: absolute;
-      width: 14px;
-      height: 14px;
+      width: 16px;
+      height: 16px;
       background-color: white;
       border-radius: 50%;
-      border: 2px solid black;
+      border: 3px solid black;
       transform: translate(-50%, -50%);
       pointer-events: none;
-      box-shadow: 0 0 5px rgba(0, 0, 0, 0.8);
+      box-shadow: 0 0 8px rgba(0, 0, 0, 0.9);
       z-index: 10;
+      animation: pulse 1.5s infinite ease-in-out;
     }
     #color-sample {
       width: 30px;
@@ -124,7 +131,7 @@
         <img src="cie1931_diagram.svg" alt="CIE 1931 Chromaticity Diagram">
         <div id="data-point" style="display: none;"></div>
         <!-- Debug info: will show exact location of measured color -->
-        <div id="debug-coordinates" style="position: absolute; bottom: 5px; right: 5px; font-size: 10px; background: rgba(255,255,255,0.7); padding: 2px; display: none;"></div>
+        <div id="debug-coordinates" style="position: absolute; bottom: 5px; right: 5px; font-size: 12px; background: rgba(255,255,255,0.8); padding: 4px; border: 1px solid #333; display: block;"></div>
       </div>
       
       <div class="data-display">
