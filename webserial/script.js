@@ -19,12 +19,22 @@ const cieYDisplay = document.getElementById('cie-y');
 const luxDisplay = document.getElementById('lux');
 const cctDisplay = document.getElementById('cct');
 const colorSample = document.getElementById('color-sample');
+const debugCoordinates = document.getElementById('debug-coordinates');
 
 // Check if Web Serial API is supported
 if ('serial' in navigator) {
   connectButton.addEventListener('click', connectToArduino);
   disconnectButton.addEventListener('click', disconnectFromArduino);
   clearButton.addEventListener('click', clearLog);
+  
+  // Add click event to CIE diagram to toggle debug view
+  document.getElementById('cie-diagram').addEventListener('click', function() {
+    if (debugCoordinates.style.display === 'block') {
+      debugCoordinates.style.display = 'none';
+    } else if (dataPoint.style.display === 'block') {
+      debugCoordinates.style.display = 'block';
+    }
+  });
 } else {
   statusDisplay.textContent = 'Web Serial API not supported in this browser. Try Chrome or Edge.';
   connectButton.disabled = true;
@@ -181,32 +191,33 @@ function parseDataFromLine(line) {
 
 // Update the CIE plot with new data point
 function updateCIEPlot(x, y) {
-  // Get the dimensions of the CIE diagram image
+  console.log(`Plotting CIE coordinates: x=${x}, y=${y}`); // Debug log
+  
+  // Get the dimensions of the CIE diagram container
+  const cieDiagram = document.getElementById('cie-diagram');
   const cieImage = document.querySelector('#cie-diagram img');
-  const imageRect = cieImage.getBoundingClientRect();
   
-  // The SVG has a coordinate system where:
-  // - X axis is marked from 0.0 to 0.8 (matched to pixel positions 60 to 470)
-  // - Y axis is marked from 0.0 to 0.9 (matched to pixel positions 476 to 15)
+  // Ensure we're only working with valid x,y coordinates
+  if (isNaN(x) || isNaN(y) || x < 0 || y < 0 || x > 1 || y > 1) {
+    console.warn(`Invalid CIE coordinates: x=${x}, y=${y}`);
+    return;
+  }
   
-  // Define the SVG's coordinate mapping
-  const svgXMin = 60, svgXMax = 470;  // Left and right edge pixel positions in SVG
-  const svgYMin = 476, svgYMax = 15;  // Bottom and top edge pixel positions in SVG
-  const cieXMin = 0.0, cieXMax = 0.8; // Min and max x chromaticity values
-  const cieYMin = 0.0, cieYMax = 0.9; // Min and max y chromaticity values
+  // Simple percentages based on the diagram bounds
+  // CIE diagram typically has coordinates: x [0-0.8], y [0-0.9]
+  const xPercent = (x / 0.8) * 100; // Scale to percentage of max x (0.8)
+  const yPercent = (1 - (y / 0.9)) * 100; // Invert y-axis and scale to percentage of max y (0.9)
   
-  // Map the CIE coordinates to percentages within the SVG viewport
-  const svgWidth = svgXMax - svgXMin;
-  const svgHeight = svgYMin - svgYMax;
-  
-  // Calculate the percentage position (normalize to SVG viewBox)
-  const xPercent = ((x - cieXMin) / (cieXMax - cieXMin)) * 100;
-  const yPercent = (1 - ((y - cieYMin) / (cieYMax - cieYMin))) * 100; // Invert y-axis
+  console.log(`Plotting at: left=${xPercent}%, top=${yPercent}%`); // Debug log
   
   // Set the data point position
   dataPoint.style.left = `${xPercent}%`;
   dataPoint.style.top = `${yPercent}%`;
   dataPoint.style.display = 'block';
+  
+  // Show debug coordinates for troubleshooting (can be toggled by clicking on the diagram)
+  debugCoordinates.textContent = `x: ${x.toFixed(4)}, y: ${y.toFixed(4)} → pos: ${Math.round(xPercent)}%, ${Math.round(yPercent)}%`;
+  debugCoordinates.style.display = 'block';
   
   // Update the color sample with an approximate RGB color
   updateColorSample(x, y);
@@ -247,6 +258,7 @@ function updateColorSample(x, y) {
 // Hide the data point and reset all displays
 function hideDataPoint() {
   dataPoint.style.display = 'none';
+  debugCoordinates.style.display = 'none';
   cieXDisplay.textContent = '-';
   cieYDisplay.textContent = '-';
   luxDisplay.textContent = '-';
