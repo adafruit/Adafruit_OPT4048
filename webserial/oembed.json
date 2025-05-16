@@ -8,5 +8,5 @@
   "author_url": "https://github.com/adafruit",
   "width": 800,
   "height": 600,
-  "html": "<iframe src='https://adafruit.github.io/Adafruit_OPT4048/' width='800' height='600' style='border: 1px solid #ddd; border-radius: 4px; max-width: 100%;' allow='serial; usb' loading='lazy' title='Adafruit OPT4048 Arduino Library'></iframe>"
+  "html": "<iframe src='https://adafruit.github.io/Adafruit_OPT4048/webserial/' width='800' height='600' style='border: 1px solid #ddd; border-radius: 4px; max-width: 100%;' allow='serial; usb' loading='lazy' title='Adafruit OPT4048 Arduino Library'></iframe>"
 }
