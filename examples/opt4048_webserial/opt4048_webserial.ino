@@ -8,6 +8,7 @@
  * 
  * This sketch works with the web interface in the /webserial directory,
  * which can be accessed at: https://adafruit.github.io/Adafruit_OPT4048/webserial/
+ * Code for web app is in gh-pages branch: https://github.com/adafruit/Adafruit_OPT4048/tree/gh-pages
  */
 
 #include <Wire.h>
