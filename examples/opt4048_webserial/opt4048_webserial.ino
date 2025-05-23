@@ -6,9 +6,9 @@
  * 
  * It continuously measures CIE x,y coordinates, lux, and color temperature.
  * 
- * This sketch works with the web interface in the /webserial directory,
+ * This sketch works with the web interface in the /webserial directory of the
+ * gh-pages branch: https://github.com/adafruit/Adafruit_OPT4048/tree/gh-pages,
  * which can be accessed at: https://adafruit.github.io/Adafruit_OPT4048/webserial/
- * Code for web app is in gh-pages branch: https://github.com/adafruit/Adafruit_OPT4048/tree/gh-pages
  */
 
 #include <Wire.h>
